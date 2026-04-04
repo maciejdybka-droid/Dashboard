@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FXScout Mobile</title>
+<style>
+:root {
+  --bg0:#080b10; --bg1:#0d1117; --bg2:#111820; --bg3:#162030;
+  --b1:#1a2535; --b2:#243040;
+  --t:#e2e8f0; --t2:#94a3b8; --t3:#475569;
+  --g:#22c55e; --r:#ef4444; --a:#3b82f6; --y:#f59e0b; --p:#a855f7;
+  --g2:rgba(34,197,94,.12); --r2:rgba(239,68,68,.12); --a2:rgba(59,130,246,.12);
+  --mono:'JetBrains Mono','Fira Code',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg0);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;font-size:14px;overflow:hidden;}
+
+/* ── SETUP ── */
+#setup{position:fixed;inset:0;background:var(--bg0);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.sw{width:100%;max-width:360px;background:var(--bg2);border:1px solid var(--b2);border-radius:16px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;}
+.sw h1{font-size:26px;font-weight:800;letter-spacing:-1px;}
+.sw h1 em{color:var(--g);font-style:normal;}
+.sw p{font-size:12px;color:var(--t2);margin-top:-8px;}
+.sw label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;}
+.sw input{width:100%;background:var(--bg3);border:1px solid var(--b2);color:var(--t);padding:12px 14px;border-radius:8px;font-family:var(--mono);font-size:13px;outline:none;-webkit-appearance:none;}
+.sw input:focus{border-color:var(--a);}
+.err-msg{font-size:11px;color:var(--r);display:none;padding:6px 0;}
+.btn-p{width:100%;background:var(--g);color:#000;border:none;border-radius:8px;padding:14px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.5px;}
+.btn-d{width:100%;background:transparent;border:1px solid var(--b2);color:var(--t2);border-radius:8px;padding:11px;font-size:12px;cursor:pointer;}
+.sw small{font-size:10px;color:var(--t3);line-height:1.6;text-align:center;}
+.sw small a{color:var(--a);text-decoration:none;}
+
+/* ── APP ── */
+#app{display:none;height:100dvh;flex-direction:column;}
+
+/* HEADER */
+.hdr{flex-shrink:0;background:var(--bg1);border-bottom:1px solid var(--b1);padding:10px 14px 8px;}
+.hdr-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.hdr-sym{font-size:18px;font-weight:800;letter-spacing:-.5px;}
+.hdr-tf-badge{font-size:10px;color:var(--t3);margin-left:6px;font-family:var(--mono);}
+.hdr-price{font-size:24px;font-weight:800;letter-spacing:-1px;font-family:var(--mono);}
+.hdr-chg{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;margin-left:6px;}
+.pos{background:var(--g2);color:var(--g);}
+.neg{background:var(--r2);color:var(--r);}
+.hdr-row2{display:flex;align-items:center;gap:6px;}
+.btn-sym{background:var(--bg3);border:1px solid var(--b1);color:var(--t2);font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;}
+.btn-ref{background:none;border:1px solid var(--b2);color:var(--t2);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;margin-left:auto;}
+.spinning{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.hdr-status{font-size:10px;color:var(--t3);}
+.sdot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px;}
+.sdot-live{background:var(--g);box-shadow:0 0 5px var(--g);}
+.sdot-demo{background:var(--y);}
+
+/* SIGNAL BAR */
+.sigbar{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--b1);padding:8px 14px;}
+.sig-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.sig-badge{font-size:12px;font-weight:800;letter-spacing:1px;padding:3px 10px;border-radius:5px;min-width:80px;text-align:center;}
+.sig-bull{background:var(--g2);color:var(--g);}
+.sig-bear{background:var(--r2);color:var(--r);}
+.sig-neu{background:rgba(148,163,184,.1);color:var(--t2);}
+.sig-bar{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.sig-fill{height:100%;border-radius:2px;transition:width .4s;}
+.sig-tip{font-size:10px;color:var(--t2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* TF ROW */
+.tf-row{flex-shrink:0;display:flex;background:var(--bg1);border-bottom:1px solid var(--b1);}
+.tf{flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:700;color:var(--t3);cursor:pointer;font-family:var(--mono);border-bottom:2px solid transparent;}
+.tf.on{color:var(--a);border-bottom-color:var(--a);}
+
+/* TABS */
+.tabs{flex-shrink:0;display:flex;background:var(--bg2);border-bottom:1px solid var(--b1);}
+.tab{flex:1;text-align:center;padding:9px 4px;font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;}
+.tab.on{color:var(--a);border-bottom-color:var(--a);}
+
+/* CONTENT */
+.content{flex:1;overflow:hidden;position:relative;}
+.panel{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;}
+.panel.on{display:block;}
+
+/* CHART PANEL */
+.chart-lbl{display:flex;align-items:center;gap:6px;padding:6px 12px 2px;font-size:9px;color:var(--t3);flex-shrink:0;}
+.lbl-dot{width:10px;height:2px;border-radius:1px;display:inline-block;}
+canvas{display:block;width:100%;}
+.sub-hdr{padding:3px 12px;font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;border-top:1px solid var(--b1);}
+.chart-wrap{background:var(--bg1);}
+
+/* BOT BAR */
+.botbar{flex-shrink:0;background:var(--bg1);border-top:1px solid var(--b1);padding:4px 14px;font-size:9px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* INDICATORS PANEL */
+.ind-section{padding:10px 12px 4px;}
+.ind-sec-title{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.ind-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.ind-card{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:8px 10px;}
+.ind-name{font-size:9px;color:var(--t3);margin-bottom:2px;}
+.ind-val{font-size:15px;font-weight:700;font-family:var(--mono);}
+.ind-sub{font-size:9px;margin-top:1px;}
+.ind-bull{color:var(--g);}
+.ind-bear{color:var(--r);}
+.ind-neu{color:var(--y);}
+.gauge{height:3px;background:var(--bg0);border-radius:2px;margin-top:4px;overflow:hidden;}
+.gauge-fill{height:100%;border-radius:2px;}
+
+/* PATTERNS PANEL */
+.pat-list{padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.pat-card{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;}
+.pat-icon{font-size:18px;flex-shrink:0;}
+.pat-body{flex:1;min-width:0;}
+.pat-name{font-size:13px;font-weight:700;}
+.pat-desc{font-size:10px;color:var(--t3);margin-top:2px;line-height:1.4;}
+.pat-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;}
+.pbull{background:var(--g2);color:var(--g);}
+.pbear{background:var(--r2);color:var(--r);}
+.pneu{background:rgba(148,163,184,.1);color:var(--t2);}
+.no-data{text-align:center;padding:40px 20px;color:var(--t3);font-size:12px;line-height:1.6;}
+
+/* MTF */
+.mtf-grid{display:flex;flex-direction:column;gap:6px;padding:0 12px 10px;}
+.mtf-card{background:var(--bg2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;}
+.mtf-tf{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.mtf-sig{font-size:14px;font-weight:800;letter-spacing:1px;}
+.mtf-rows{display:flex;gap:12px;margin-top:4px;flex-wrap:wrap;}
+.mtf-item{font-size:10px;color:var(--t3);}
+.mtf-item span{font-family:var(--mono);font-weight:700;color:var(--t);}
+
+/* MODAL */
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:flex-end;}
+#modal.open{display:flex;}
+#modal-sheet{background:var(--bg2);border-radius:16px 16px 0 0;width:100%;padding:16px 16px 32px;max-height:82vh;overflow-y:auto;}
+.modal-title{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+.sym-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sym-group{grid-column:1/-1;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-top:6px;}
+.sym-btn{background:var(--bg3);border:1px solid var(--b1);color:var(--t);font-size:13px;font-weight:600;padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left;}
+.sym-btn:active{background:var(--a);border-color:var(--a);color:#fff;}
+.custom-row{display:flex;gap:8px;margin-top:10px;}
+.custom-inp{flex:1;background:var(--bg3);border:1px solid var(--b1);color:var(--t);font-size:13px;padding:11px 12px;border-radius:8px;outline:none;-webkit-appearance:none;}
+.custom-inp:focus{border-color:var(--a);}
+.btn-go{background:var(--a);border:none;color:#fff;font-size:13px;font-weight:700;padding:11px 18px;border-radius:8px;cursor:pointer;}
+
+/* SCROLLBAR */
+.panel::-webkit-scrollbar{width:3px;}
+.panel::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+
+/* ANALIZA TAB */
+.an-card{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:12px 14px;}
+.an-card.bull{border-left:3px solid var(--g);}
+.an-card.bear{border-left:3px solid var(--r);}
+.an-card.neu{border-left:3px solid var(--y);}
+.an-card.info{border-left:3px solid var(--a);}
+.an-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.an-title{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.8px;}
+.an-value{font-size:16px;font-weight:800;font-family:'JetBrains Mono','Fira Code',monospace;}
+.an-verdict{font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;margin-bottom:6px;display:inline-block;}
+.vbull{background:var(--g2);color:var(--g);}
+.vbear{background:var(--r2);color:var(--r);}
+.vneu{background:rgba(148,163,184,.1);color:var(--t2);}
+.vinfo{background:var(--a2);color:var(--a);}
+.an-desc{font-size:12px;color:var(--t2);line-height:1.6;}
+.an-desc strong{color:var(--t);}
+.an-tip{margin-top:6px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);padding-top:6px;line-height:1.5;}
+.an-tip::before{content:'💡 ';}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="sw">
+    <h1>FX<em>Scout</em></h1>
+    <p>Mobilna analiza techniczna · Twelve Data</p>
+    <label>Klucz API Twelve Data</label>
+    <input type="text" id="api-inp" placeholder="wklej klucz API…" autocomplete="off" spellcheck="false">
+    <div class="err-msg" id="api-err"></div>
+    <button class="btn-p" onclick="connectLive()">▶ POŁĄCZ →</button>
+    <button class="btn-d" onclick="connectDemo()">Tryb DEMO (dane symulowane)</button>
+    <small>
+      Darmowy klucz: <a href="https://twelvedata.com/register" target="_blank">twelvedata.com/register</a><br>
+      800 zapytań/dzień · klucz zapisywany lokalnie
+    </small>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-row1">
+      <div>
+        <span class="hdr-sym" id="h-sym">EUR/USD</span>
+        <span class="hdr-tf-badge" id="h-tf">5M</span>
+      </div>
+      <div style="display:flex;align-items:baseline">
+        <span class="hdr-price" id="h-price">─</span>
+        <span class="hdr-chg pos" id="h-chg">─</span>
+      </div>
+    </div>
+    <div class="hdr-row2">
+      <button class="btn-sym" onclick="openModal()">☰ Instrument</button>
+      <span class="hdr-status"><span class="sdot sdot-demo" id="h-sdot"></span><span id="h-stxt">─</span></span>
+      <button class="btn-ref" id="btn-ref" onclick="manualRefresh()">↻</button>
+    </div>
+  </div>
+
+  <!-- SIGNAL BAR -->
+  <div class="sigbar">
+    <div class="sig-row">
+      <div class="sig-badge sig-neu" id="sig-badge">◆ NEUTRAL</div>
+      <div class="sig-bar"><div class="sig-fill" id="sig-fill" style="width:50%;background:var(--t3)"></div></div>
+      <span id="sig-pct" style="font-size:10px;color:var(--t3);font-family:var(--mono)">50%</span>
+    </div>
+    <div class="sig-tip" id="sig-tip">Ładowanie…</div>
+  </div>
+
+  <!-- TF ROW -->
+  <div class="tf-row">
+    <div class="tf on" data-tf="1min" onclick="setTF(this)">1M</div>
+    <div class="tf" data-tf="5min" onclick="setTF(this)">5M</div>
+    <div class="tf" data-tf="15min" onclick="setTF(this)">15M</div>
+    <div class="tf" data-tf="1h" onclick="setTF(this)">1H</div>
+    <div class="tf" data-tf="4h" onclick="setTF(this)">4H</div>
+    <div class="tf" data-tf="1day" onclick="setTF(this)">D</div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab on" onclick="switchTab(0)">📈 Wykres</div>
+    <div class="tab" onclick="switchTab(1)">🔢 Wskaźniki</div>
+    <div class="tab" onclick="switchTab(2)">🕯 Formacje</div>
+    <div class="tab" onclick="switchTab(3)">📖 Analiza</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- PANEL 0: CHART -->
+    <div class="panel on" id="p0">
+      <div class="chart-wrap">
+        <div class="chart-lbl">
+          <span id="cl-sym" style="color:var(--t2);font-weight:700;font-size:10px">EUR/USD</span>
+          <span class="lbl-dot" style="background:var(--y)"></span><span>EMA9</span>
+          <span class="lbl-dot" style="background:var(--p)"></span><span>EMA21</span>
+          <span class="lbl-dot" style="background:var(--a);opacity:.4"></span><span>BB</span>
+        </div>
+        <canvas id="c-main" height="220"></canvas>
+        <div class="sub-hdr">MACD (8,21,5)</div>
+        <canvas id="c-macd" height="75"></canvas>
+        <div class="sub-hdr">RSI (7)</div>
+        <canvas id="c-rsi" height="65"></canvas>
+      </div>
+    </div>
+
+    <!-- PANEL 1: INDICATORS -->
+    <div class="panel" id="p1">
+      <div class="ind-section">
+        <div class="ind-sec-title">Trend</div>
+        <div class="ind-grid" id="ind-trend"></div>
+        <div class="ind-sec-title">Oscylatory</div>
+        <div class="ind-grid" id="ind-osc"></div>
+        <div class="ind-sec-title">Volatility</div>
+        <div class="ind-grid" id="ind-vol"></div>
+        <div class="ind-sec-title">Multi-Timeframe</div>
+        <div class="mtf-grid" id="mtf-grid" style="padding:0 0 10px;"></div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: PATTERNS -->
+    <div class="panel" id="p2">
+      <div class="pat-list" id="pat-list"></div>
+    </div>
+
+    <!-- P3: ANALIZA -->
+    <div class="panel" id="p3">
+      <div id="analiza-content" style="padding:10px 12px 20px;display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+  </div><!-- content -->
+
+  <!-- BOT BAR -->
+  <div class="botbar" id="botbar">─</div>
+
+</div><!-- app -->
+
+<!-- MODAL -->
+<div id="modal" onclick="if(event.target===this)closeModal()">
+  <div id="modal-sheet">
+    <div class="modal-title">Wybierz instrument</div>
+    <div class="sym-grid">
+      <div class="sym-group">🌍 Forex</div>
+      <button class="sym-btn" onclick="pickSym('EUR/USD')">EUR/USD</button>
+      <button class="sym-btn" onclick="pickSym('GBP/USD')">GBP/USD</button>
+      <button class="sym-btn" onclick="pickSym('USD/JPY')">USD/JPY</button>
+      <button class="sym-btn" onclick="pickSym('USD/CHF')">USD/CHF</button>
+      <button class="sym-btn" onclick="pickSym('AUD/USD')">AUD/USD</button>
+      <button class="sym-btn" onclick="pickSym('USD/CAD')">USD/CAD</button>
+      <div class="sym-group">📊 Indeksy ETF</div>
+      <button class="sym-btn" onclick="pickSym('QQQ')">QQQ (≈Nasdaq)</button>
+      <button class="sym-btn" onclick="pickSym('SPY')">SPY (≈S&amp;P500)</button>
+      <button class="sym-btn" onclick="pickSym('DIA')">DIA (≈Dow)</button>
+      <button class="sym-btn" onclick="pickSym('IWM')">IWM (Russell)</button>
+      <div class="sym-group">₿ Krypto</div>
+      <button class="sym-btn" onclick="pickSym('BTC/USD')">BTC/USD</button>
+      <button class="sym-btn" onclick="pickSym('ETH/USD')">ETH/USD</button>
+      <button class="sym-btn" onclick="pickSym('XRP/USD')">XRP/USD</button>
+      <button class="sym-btn" onclick="pickSym('SOL/USD')">SOL/USD</button>
+      <div class="sym-group">📈 Akcje US</div>
+      <button class="sym-btn" onclick="pickSym('AAPL')">AAPL</button>
+      <button class="sym-btn" onclick="pickSym('TSLA')">TSLA</button>
+      <button class="sym-btn" onclick="pickSym('NVDA')">NVDA</button>
+      <button class="sym-btn" onclick="pickSym('MSFT')">MSFT</button>
+      <button class="sym-btn" onclick="pickSym('META')">META</button>
+      <button class="sym-btn" onclick="pickSym('AMZN')">AMZN</button>
+      <div class="sym-group">🪙 Towary</div>
+      <button class="sym-btn" onclick="pickSym('XAU/USD')">Gold</button>
+      <button class="sym-btn" onclick="pickSym('XAG/USD')">Silver</button>
+    </div>
+    <div class="custom-row">
+      <input class="custom-inp" id="custom-inp" placeholder="Własny symbol np. GOOGL" type="text">
+      <button class="btn-go" onclick="pickCustom()">GO</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+var API = '';
+var DEMO = false;
+var TF = '5min';
+var SYM = 'EUR/USD';
+var PH = [];
+var CUR_DEC = 4;
+var CUR_TYPE = 'forex'; // forex | stock | crypto
+var lastFetch = 0;
+var refreshTimer = null;
+var currentTab = 0;
+
+// ═══════════════════════════════════════════
+// INSTRUMENT TYPE
+// ═══════════════════════════════════════════
+function getType(sym) {
+  var s = sym.toUpperCase();
+  if (/^(BTC|ETH|XRP|SOL|ADA|BNB|DOGE)/.test(s)) return 'crypto';
+  if (s.indexOf('XAU') !== -1 || s.indexOf('XAG') !== -1) return 'commodity';
+  if (/\/(USD|EUR|GBP|JPY|CHF|AUD|CAD|NZD)$/.test(s)) return 'forex';
+  return 'stock';
+}
+
+function getDec(sym, type) {
+  if (type === 'forex') return sym.indexOf('JPY') !== -1 ? 2 : 4;
+  if (type === 'crypto') return sym.indexOf('BTC') !== -1 ? 1 : 2;
+  return 2;
+}
+
+function pf(v) {
+  return typeof v === 'number' ? v.toFixed(CUR_DEC) : '─';
+}
+
+function tfLabel(tf) {
+  var m = {'1min':'1M','5min':'5M','15min':'15M','1h':'1H','4h':'4H','1day':'D'};
+  return m[tf] || tf;
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  var k = localStorage.getItem('fxscout_api');
+  if (k) {
+    API = k;
+    document.getElementById('api-inp').value = k;
+    var s = localStorage.getItem('fxscout_sym') || 'EUR/USD';
+    connectLive(s);
+  }
+});
+
+function connectLive(sym) {
+  var inp = document.getElementById('api-inp');
+  var k = inp ? inp.value.trim() : '';
+  if (!k) k = localStorage.getItem('fxscout_api') || '';
+  if (!k || k.length < 6) {
+    var e = document.getElementById('api-err');
+    e.textContent = 'Wklej klucz API z twelvedata.com';
+    e.style.display = 'block';
+    return;
+  }
+  API = k;
+  localStorage.setItem('fxscout_api', k);
+  DEMO = false;
+  launch(sym || 'EUR/USD');
+}
+
+function connectDemo() {
+  DEMO = true;
+  launch('EUR/USD');
+}
+
+function launch(sym) {
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  var dot = document.getElementById('h-sdot');
+  var stxt = document.getElementById('h-stxt');
+  if (DEMO) { dot.className = 'sdot sdot-demo'; stxt.textContent = 'Demo'; }
+  else       { dot.className = 'sdot sdot-live'; stxt.textContent = 'Live'; }
+  setSym(sym);
+  startAutoRefresh();
+}
+
+// ═══════════════════════════════════════════
+// SYMBOL
+// ═══════════════════════════════════════════
+function setSym(sym) {
+  SYM = sym.toUpperCase();
+  CUR_TYPE = getType(SYM);
+  CUR_DEC = getDec(SYM, CUR_TYPE);
+  document.getElementById('h-sym').textContent = SYM;
+  document.getElementById('cl-sym').textContent = SYM;
+  localStorage.setItem('fxscout_sym', SYM);
+  PH = [];
+  lastFetch = 0;
+  clearCharts();
+  document.getElementById('h-price').textContent = '─';
+  if (DEMO) { genDemo(); updateAll(); fetchMTF(); }
+  else fetchData();
+}
+
+function pickSym(s) {
+  closeModal();
+  setSym(s);
+}
+
+function pickCustom() {
+  var v = document.getElementById('custom-inp').value.trim().toUpperCase();
+  if (v) { closeModal(); setSym(v); }
+}
+
+// ═══════════════════════════════════════════
+// TF
+// ═══════════════════════════════════════════
+function setTF(el) {
+  document.querySelectorAll('.tf').forEach(function(b) { b.classList.remove('on'); });
+  el.classList.add('on');
+  TF = el.getAttribute('data-tf');
+  document.getElementById('h-tf').textContent = tfLabel(TF);
+  lastFetch = 0;
+  if (DEMO) { genDemo(); updateAll(); } else fetchData();
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(i) {
+  currentTab = i;
+  document.querySelectorAll('.tab').forEach(function(t, idx) { t.classList.toggle('on', idx === i); });
+  document.querySelectorAll('.panel').forEach(function(p, idx) { p.classList.toggle('on', idx === i); });
+  if (i === 0 && PH.length) { drawMain(); drawMACD(); drawRSI(); }
+  if (i === 3) {
+    if (PH.length) { renderAnaliza(); }
+    else { document.getElementById('analiza-content').innerHTML = '<div style="padding:30px;text-align:center;color:var(--t3);font-size:13px">Czekam na dane…<br><span style="font-size:11px">Odśwież lub poczekaj na auto-refresh</span></div>'; }
+  }
+}
+// ═══════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+// ═══════════════════════════════════════════
+// FETCH — identyczna logika co działający desktop
+// ═══════════════════════════════════════════
+async function fetchData() {
+  var now = Date.now();
+  if (now - lastFetch < 14000 && lastFetch !== 0) {
+    var w = Math.ceil((14000 - (now - lastFetch)) / 1000);
+    setBot('Odczekaj ' + w + 's…');
+    return;
+  }
+  if (!API) return;
+  lastFetch = now;
+  var btn = document.getElementById('btn-ref');
+  btn.classList.add('spinning');
+  setBot('Pobieranie ' + SYM + '…');
+  try {
+    var url = 'https://api.twelvedata.com/time_series'
+      + '?symbol=' + encodeURIComponent(SYM)
+      + '&interval=' + TF
+      + '&outputsize=80'
+      + '&apikey=' + API;
+    var res = await fetch(url);
+    var data = await res.json();
+    if (data.status === 'error' || !data.values) {
+      var msg = data.message || 'Błąd API';
+      if (msg.indexOf('credits') !== -1 || msg.indexOf('limit') !== -1) {
+        setBot('⚠ Limit API — odnawia się o 1:00 PL');
+      } else {
+        setBot('⚠ ' + msg);
+        // pokaż setup żeby wpisał nowy klucz
+        if (msg.indexOf('apikey') !== -1 || msg.indexOf('API') !== -1) {
+          document.getElementById('app').style.display = 'none';
+          document.getElementById('setup').style.display = 'flex';
+        }
+      }
+      btn.classList.remove('spinning');
+      return;
+    }
+    PH = data.values.slice().reverse().map(function(c) {
+      return { o: +c.open, h: +c.high, l: +c.low, c: +c.close, v: +(c.volume || 0) };
+    });
+    updateAll();
+    setBot(SYM + ' · ' + PH.length + ' świec · ' + new Date().toLocaleTimeString('pl-PL'));
+    document.getElementById('h-stxt').textContent = new Date().toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'});
+    fetchMTF();
+  } catch (err) {
+    setBot('⚠ Błąd sieci: ' + err.message + ' — otwórz przez GitHub Pages, nie lokalnie');
+  }
+  btn.classList.remove('spinning');
+}
+
+function manualRefresh() {
+  if (DEMO) { tickDemo(); updateAll(); fetchMTF(); }
+  else { lastFetch = 0; fetchData(); }
+}
+
+function setBot(msg) { document.getElementById('botbar').textContent = msg; }
+
+// ═══════════════════════════════════════════
+// AUTO REFRESH 60s
+// ═══════════════════════════════════════════
+function startAutoRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(function() {
+    if (!DEMO) { lastFetch = 0; fetchData(); }
+  }, 60000);
+}
+
+// ═══════════════════════════════════════════
+// FETCH MTF
+// ═══════════════════════════════════════════
+async function fetchTF(tf) {
+  if (DEMO) return generateDemoTF(tf);
+  try {
+    var url = 'https://api.twelvedata.com/time_series'
+      + '?symbol=' + encodeURIComponent(SYM)
+      + '&interval=' + tf
+      + '&outputsize=60'
+      + '&apikey=' + API;
+    var res = await fetch(url);
+    var data = await res.json();
+    if (data.status === 'error' || !data.values) return null;
+    return data.values.slice().reverse().map(function(c) {
+      return { o: +c.open, h: +c.high, l: +c.low, c: +c.close, v: +(c.volume || 0) };
+    });
+  } catch (e) { return null; }
+}
+
+async function fetchMTF() {
+  var tfs = ['5min', '15min', '1h'];
+  var labels = ['5M', '15M', '1H'];
+  var results = await Promise.all(tfs.map(function(tf) { return fetchTF(tf); }));
+  var grid = document.getElementById('mtf-grid');
+  grid.innerHTML = '';
+  results.forEach(function(candles, i) {
+    var card = document.createElement('div');
+    card.className = 'mtf-card';
+    if (!candles || candles.length < 20) {
+      card.innerHTML = '<div class="mtf-tf">' + labels[i] + '</div><div style="color:var(--t3);font-size:11px">N/A</div>';
+    } else {
+      var sig = quickSignal(candles);
+      var sc = sig.dir === 'BUY' ? 'var(--g)' : sig.dir === 'SELL' ? 'var(--r)' : 'var(--t2)';
+      var rc = sig.rsi < 35 ? 'var(--g)' : sig.rsi > 65 ? 'var(--r)' : 'var(--t2)';
+      card.innerHTML = '<div class="mtf-tf">' + labels[i] + '</div>'
+        + '<div class="mtf-sig" style="color:' + sc + '">' + sig.dir + '</div>'
+        + '<div class="mtf-rows">'
+        + '<div class="mtf-item">RSI <span style="color:' + rc + '">' + sig.rsi.toFixed(0) + '</span></div>'
+        + '<div class="mtf-item">MACD <span style="color:' + (sig.macdH > 0 ? 'var(--g)' : 'var(--r)') + '">' + (sig.macdH >= 0 ? '+' : '') + sig.macdH.toFixed(5) + '</span></div>'
+        + '</div>';
+    }
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════
+var DEMO_P = 1.085;
+function genDemo() {
+  PH = [];
+  DEMO_P = 1.085 + (Math.random() - 0.5) * 0.003;
+  for (var i = 0; i < 80; i++) {
+    var o = DEMO_P;
+    DEMO_P += (Math.random() - 0.49) * 0.0007;
+    DEMO_P = Math.max(1.065, Math.min(1.105, DEMO_P));
+    var rng = Math.random() * 0.001;
+    PH.push({ o: o, h: Math.max(o, DEMO_P) + rng * 0.4, l: Math.min(o, DEMO_P) - rng * 0.4, c: DEMO_P, v: Math.round(Math.random() * 4000 + 500) });
+  }
+}
+function tickDemo() {
+  if (!PH.length) return;
+  DEMO_P += (Math.random() - 0.49) * 0.0005;
+  DEMO_P = Math.max(1.065, Math.min(1.105, DEMO_P));
+  var last = PH[PH.length - 1];
+  var rng = Math.random() * 0.0008;
+  PH.push({ o: last.c, h: Math.max(last.c, DEMO_P) + rng * 0.3, l: Math.min(last.c, DEMO_P) - rng * 0.3, c: DEMO_P, v: Math.round(Math.random() * 2000 + 300) });
+  if (PH.length > 100) PH.shift();
+}
+function generateDemoTF(tf) {
+  var f = tf === '15min' ? 3 : tf === '1h' ? 12 : 1;
+  var out = [];
+  for (var i = 0; i + f <= PH.length; i += f) {
+    var ch = PH.slice(i, i + f);
+    out.push({ o: ch[0].o, h: Math.max.apply(null, ch.map(function(c) { return c.h; })), l: Math.min.apply(null, ch.map(function(c) { return c.l; })), c: ch[ch.length - 1].c, v: ch.reduce(function(a, c) { return a + c.v; }, 0) });
+  }
+  return out.length > 10 ? out : null;
+}
+
+// ═══════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════
+function ema(arr, p) {
+  var k = 2 / (p + 1), out = [], sum = 0;
+  for (var i = 0; i < arr.length; i++) {
+    if (i < p - 1) { sum += arr[i]; out.push(null); continue; }
+    if (i === p - 1) { sum += arr[i]; out.push(sum / p); continue; }
+    out.push(arr[i] * k + out[i - 1] * (1 - k));
+  }
+  return out;
+}
+
+function calcRSI(closes, p) {
+  var rsi = [], g = 0, l = 0;
+  for (var i = 0; i < p; i++) rsi.push(null);
+  for (var i = 1; i <= p; i++) { var d = closes[i] - closes[i-1]; if (d > 0) g += d; else l -= d; }
+  var ag = g / p, al = l / p;
+  rsi.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  for (var i = p + 1; i < closes.length; i++) {
+    var d = closes[i] - closes[i-1], gi = d > 0 ? d : 0, li = d < 0 ? -d : 0;
+    ag = (ag * (p-1) + gi) / p; al = (al * (p-1) + li) / p;
+    rsi.push(al === 0 ? 100 : 100 - 100 / (1 + ag / al));
+  }
+  return rsi;
+}
+
+function calcMACD(closes) {
+  var e12 = ema(closes, 8), e26 = ema(closes, 21);
+  var ml = closes.map(function(_, i) { return e12[i] !== null && e26[i] !== null ? e12[i] - e26[i] : null; });
+  var mv = ml.filter(function(v) { return v !== null; });
+  var sv = ema(mv, 9);
+  var sig = [], idx = 0;
+  ml.forEach(function(v) { sig.push(v !== null ? (sv[idx] !== undefined ? sv[idx++] : null) : null); if (v !== null && sv[idx-1] === undefined) idx--; });
+  // rebuild signal properly
+  var sig2 = [], cnt = 0;
+  for (var i = 0; i < ml.length; i++) {
+    if (ml[i] !== null) { sig2.push(sv[cnt] !== undefined ? sv[cnt] : null); cnt++; }
+    else sig2.push(null);
+  }
+  var hist = ml.map(function(v, i) { return v !== null && sig2[i] !== null ? v - sig2[i] : null; });
+  return { macd: ml, signal: sig2, hist: hist };
+}
+
+function calcBB(closes, p, mult) {
+  var upper = [], lower = [], mid = [];
+  for (var i = 0; i < closes.length; i++) {
+    if (i < p - 1) { upper.push(null); lower.push(null); mid.push(null); continue; }
+    var sl = closes.slice(i - p + 1, i + 1);
+    var m = sl.reduce(function(a, b) { return a + b; }, 0) / p;
+    var sd = Math.sqrt(sl.reduce(function(a, b) { return a + (b-m)*(b-m); }, 0) / p);
+    mid.push(m); upper.push(m + mult * sd); lower.push(m - mult * sd);
+  }
+  return { upper: upper, lower: lower, mid: mid };
+}
+
+function calcATR(candles, p) {
+  var tr = [0];
+  for (var i = 1; i < candles.length; i++) {
+    tr.push(Math.max(candles[i].h - candles[i].l, Math.abs(candles[i].h - candles[i-1].c), Math.abs(candles[i].l - candles[i-1].c)));
+  }
+  return ema(tr, p);
+}
+
+function quickSignal(candles) {
+  if (!candles || candles.length < 27) return { dir: 'N/A', rsi: 50, macdH: 0 };
+  var closes = candles.map(function(c) { return c.c; });
+  var n = closes.length;
+  var rsiArr = calcRSI(closes, 7);
+  var macdD = calcMACD(closes);
+  var e9 = ema(closes, 9), e21 = ema(closes, 21);
+  var rsi = rsiArr[n-1] || 50;
+  var macdH = macdD.hist[n-1] || 0;
+  var emaD = (e9[n-1] && e21[n-1]) ? e9[n-1] - e21[n-1] : 0;
+  var score = 0;
+  if (rsi < 35) score += 2; else if (rsi > 65) score -= 2; else if (rsi > 52) score += 0.5; else if (rsi < 48) score -= 0.5;
+  if (macdH > 0) score += 1.5; else if (macdH < 0) score -= 1.5;
+  if (emaD > 0) score += 1; else if (emaD < 0) score -= 1;
+  return { dir: score >= 2 ? 'BUY' : score <= -2 ? 'SELL' : 'NEUTRAL', rsi: rsi, macdH: macdH };
+}
+
+// ═══════════════════════════════════════════
+// MASTER SIGNAL
+// ═══════════════════════════════════════════
+function masterSignal(candles) {
+  if (candles.length < 30) return { dir: 'NEUTRAL', pct: 50, tip: 'Za mało danych.' };
+  var closes = candles.map(function(c) { return c.c; });
+  var n = closes.length;
+  var rsiArr = calcRSI(closes, 7);
+  var macdD = calcMACD(closes);
+  var e9 = ema(closes, 9), e21 = ema(closes, 21), e50 = ema(closes, 50);
+  var bb = calcBB(closes, 20, 2);
+  var rsi = rsiArr[n-1] || 50;
+  var macdH = macdD.hist[n-1] || 0, macdHP = macdD.hist[n-2] || 0;
+  var price = closes[n-1];
+  var score = 0, reasons = [];
+  if (rsi < 35)      { score += 2; reasons.push('RSI ' + rsi.toFixed(0) + ' oversold'); }
+  else if (rsi > 65) { score -= 2; reasons.push('RSI ' + rsi.toFixed(0) + ' overbought'); }
+  else if (rsi > 52) score += 0.5; else if (rsi < 48) score -= 0.5;
+  if (macdH > 0 && macdHP <= 0)      { score += 2; reasons.push('MACD cross ▲'); }
+  else if (macdH < 0 && macdHP >= 0) { score -= 2; reasons.push('MACD cross ▼'); }
+  else if (macdH > 0) score += 0.5; else if (macdH < 0) score -= 0.5;
+  if (e9[n-1] && e21[n-1] && e50[n-1]) {
+    if (e9[n-1] > e21[n-1] && e21[n-1] > e50[n-1]) { score += 1.5; reasons.push('EMA bullish'); }
+    else if (e9[n-1] < e21[n-1] && e21[n-1] < e50[n-1]) { score -= 1.5; reasons.push('EMA bearish'); }
+  }
+  if (bb.upper[n-1] && bb.lower[n-1]) {
+    if (price > bb.upper[n-1]) { score -= 1; reasons.push('Powyżej BB'); }
+    else if (price < bb.lower[n-1]) { score += 1; reasons.push('Poniżej BB'); }
+  }
+  detectPatterns(candles).forEach(function(p) {
+    if (p.dir === 'bull') { score += 0.8; reasons.push(p.name); }
+    else if (p.dir === 'bear') { score -= 0.8; reasons.push(p.name); }
+  });
+  var norm = Math.max(-8, Math.min(8, score));
+  var pct = Math.round(50 + norm / 8 * 50);
+  var dir = score >= 1.5 ? 'BUY' : score <= -1.5 ? 'SELL' : 'NEUTRAL';
+  return { dir: dir, pct: pct, tip: reasons.slice(0, 3).join(' · ') || 'Brak wyraźnego sygnału.' };
+}
+
+// ═══════════════════════════════════════════
+// PATTERN DETECTION
+// ═══════════════════════════════════════════
+function detectPatterns(candles) {
+  var pats = [], n = candles.length;
+  if (n < 3) return pats;
+  var c = candles[n-1], p = candles[n-2], pp = candles[n-3];
+  var body = Math.abs(c.c - c.o), range = c.h - c.l || 0.0001;
+  var lw = Math.min(c.o, c.c) - c.l, uw = c.h - Math.max(c.o, c.c);
+  if (body / range < 0.1)
+    pats.push({ name: 'Doji', dir: 'neu', icon: '⚖', desc: 'Niezdecydowanie. Czekaj na potwierdzenie.' });
+  if (body > 0 && lw > body * 2 && uw < body * 0.5)
+    pats.push({ name: 'Hammer', dir: 'bull', icon: '🔨', desc: 'Odwrócenie wzrostowe. Kupujący odrzucili dołki.' });
+  if (body > 0 && uw > body * 2 && lw < body * 0.5)
+    pats.push({ name: 'Shooting Star', dir: 'bear', icon: '💫', desc: 'Odwrócenie spadkowe. Sprzedający dominują.' });
+  if (p.c < p.o && c.c > c.o && c.o < p.c && c.c > p.o)
+    pats.push({ name: 'Bullish Engulfing', dir: 'bull', icon: '📈', desc: 'Byki przejęły kontrolę. Silny sygnał BUY.' });
+  if (p.c > p.o && c.c < c.o && c.o > p.c && c.c < p.o)
+    pats.push({ name: 'Bearish Engulfing', dir: 'bear', icon: '📉', desc: 'Niedźwiedzie dominują. Sygnał SELL.' });
+  if (pp.c < pp.o && Math.abs(p.c - p.o) < (pp.h - pp.l) * 0.3 && c.c > c.o && c.c > (pp.o + pp.c) / 2)
+    pats.push({ name: 'Morning Star', dir: 'bull', icon: '🌅', desc: 'Koniec trendu spadkowego. Sygnał BUY.' });
+  if (pp.c > pp.o && Math.abs(p.c - p.o) < (pp.h - pp.l) * 0.3 && c.c < c.o && c.c < (pp.o + pp.c) / 2)
+    pats.push({ name: 'Evening Star', dir: 'bear', icon: '🌆', desc: 'Koniec trendu wzrostowego. Sygnał SELL.' });
+  var c1 = candles[n-3], c2 = candles[n-2], c3 = candles[n-1];
+  if (c1.c > c1.o && c2.c > c2.o && c3.c > c3.o && c2.c > c1.c && c3.c > c2.c)
+    pats.push({ name: '3 White Soldiers', dir: 'bull', icon: '⚔', desc: 'Silna kontynuacja wzrostów.' });
+  if (c1.c < c1.o && c2.c < c2.o && c3.c < c3.o && c2.c < c1.c && c3.c < c2.c)
+    pats.push({ name: '3 Black Crows', dir: 'bear', icon: '🦅', desc: 'Silna kontynuacja spadków.' });
+  if (Math.abs(p.h - c.h) < range * 0.05 && p.c > p.o && c.c < c.o)
+    pats.push({ name: 'Tweezer Top', dir: 'bear', icon: '🔝', desc: 'Podwójny szczyt — opór. Sygnał SELL.' });
+  if (Math.abs(p.l - c.l) < range * 0.05 && p.c < p.o && c.c > c.o)
+    pats.push({ name: 'Tweezer Bottom', dir: 'bull', icon: '🔻', desc: 'Podwójne dno — wsparcie. Sygnał BUY.' });
+  return pats;
+}
+
+// ═══════════════════════════════════════════
+// UPDATE ALL
+// ═══════════════════════════════════════════
+function updateAll() {
+  if (!PH.length) return;
+  var closes = PH.map(function(c) { return c.c; });
+  var n = closes.length;
+  var last = PH[n-1], first = PH[0];
+  // Header
+  document.getElementById('h-price').textContent = pf(last.c);
+  var chg = (last.c - first.o) / first.o * 100;
+  var chgEl = document.getElementById('h-chg');
+  chgEl.textContent = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+  chgEl.className = 'hdr-chg ' + (chg >= 0 ? 'pos' : 'neg');
+  // Signal
+  var sig = masterSignal(PH);
+  var badge = document.getElementById('sig-badge');
+  badge.textContent = sig.dir === 'BUY' ? '▲ BUY' : sig.dir === 'SELL' ? '▼ SELL' : '◆ NEUTRAL';
+  badge.className = 'sig-badge ' + (sig.dir === 'BUY' ? 'sig-bull' : sig.dir === 'SELL' ? 'sig-bear' : 'sig-neu');
+  var fill = document.getElementById('sig-fill');
+  fill.style.width = sig.pct + '%';
+  fill.style.background = sig.dir === 'BUY' ? 'var(--g)' : sig.dir === 'SELL' ? 'var(--r)' : 'var(--t3)';
+  document.getElementById('sig-pct').textContent = sig.pct + '%';
+  document.getElementById('sig-tip').textContent = sig.tip;
+  // Charts (only if tab 0 visible)
+  if (currentTab === 0) { drawMain(); drawMACD(); drawRSI(); }
+  if (currentTab === 3) { renderAnaliza(); }
+  // Indicators
+  renderIndicators();
+  // Patterns
+  renderPatterns();
+}
+
+// ═══════════════════════════════════════════
+// CHART DRAWING
+// ═══════════════════════════════════════════
+function clearCharts() {
+  ['c-main', 'c-macd', 'c-rsi'].forEach(function(id) {
+    var c = document.getElementById(id);
+    if (c) { var ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height); }
+  });
+}
+
+function getCtx(id, h) {
+  var canvas = document.getElementById(id);
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.offsetWidth || window.innerWidth;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.height = h + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx._w = w; ctx._h = h;
+  return ctx;
+}
+
+function lerp(v, a, b, c, d) {
+  if (b === a) return (c + d) / 2;
+  return c + (v - a) / (b - a) * (d - c);
+}
+
+function drawMain() {
+  var ctx = getCtx('c-main', 220);
+  var W = ctx._w, H = ctx._h;
+  var PAD = { l: 52, r: 6, t: 6, b: 20 };
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+  if (!PH.length) return;
+  var N = Math.min(PH.length, 60);
+  var sl = PH.slice(PH.length - N);
+  var closes = PH.map(function(c) { return c.c; });
+  var hi = Math.max.apply(null, sl.map(function(c) { return c.h; }));
+  var lo = Math.min.apply(null, sl.map(function(c) { return c.l; }));
+  var mg = (hi - lo) * 0.05 || hi * 0.002;
+  hi += mg; lo -= mg;
+  var cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+  var off = PH.length - N;
+  function yP(v) { return PAD.t + lerp(v, lo, hi, ch, 0); }
+  function xP(i) { return PAD.l + (i + 0.5) / N * cw; }
+  // Grid
+  ctx.strokeStyle = '#1a2535'; ctx.lineWidth = 0.5;
+  ctx.fillStyle = '#475569'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  for (var gi = 0; gi <= 4; gi++) {
+    var gy = PAD.t + ch * gi / 4;
+    ctx.beginPath(); ctx.moveTo(PAD.l, gy); ctx.lineTo(W - PAD.r, gy); ctx.stroke();
+    ctx.fillText((hi - (hi-lo)*gi/4).toFixed(CUR_DEC), PAD.l - 3, gy + 3);
+  }
+  var bb = calcBB(closes, 20, 2);
+  var e9 = ema(closes, 9), e21 = ema(closes, 21);
+  // BB
+  function drawLine(arr, col, lw) {
+    ctx.beginPath(); var started = false;
+    for (var i = 0; i < N; i++) {
+      var v = arr[i + off]; if (v === null) continue;
+      var x = xP(i), y = yP(v);
+      if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke();
+  }
+  drawLine(bb.upper, 'rgba(59,130,246,0.3)', 1);
+  drawLine(bb.lower, 'rgba(59,130,246,0.3)', 1);
+  drawLine(e9, '#f59e0b', 1.2);
+  drawLine(e21, '#a855f7', 1.2);
+  // Candles
+  var bw = Math.max(1.5, cw / N * 0.6);
+  for (var i = 0; i < N; i++) {
+    var c = sl[i], bull = c.c >= c.o, col = bull ? '#22c55e' : '#ef4444';
+    var x = xP(i);
+    ctx.beginPath(); ctx.moveTo(x, yP(c.h)); ctx.lineTo(x, yP(c.l));
+    ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.stroke();
+    var top = Math.min(yP(c.o), yP(c.c)), bh = Math.max(1, Math.abs(yP(c.o) - yP(c.c)));
+    ctx.fillStyle = col; ctx.fillRect(x - bw/2, top, bw, bh);
+  }
+}
+
+function drawMACD() {
+  var ctx = getCtx('c-macd', 75);
+  var W = ctx._w, H = ctx._h;
+  var PAD = { l: 52, r: 6, t: 4, b: 4 };
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+  if (!PH.length) return;
+  var closes = PH.map(function(c) { return c.c; });
+  var md = calcMACD(closes);
+  var N = Math.min(PH.length, 60), off = PH.length - N;
+  var hist = md.hist.slice(off), macd = md.macd.slice(off), sig = md.signal.slice(off);
+  var vals = hist.filter(function(v) { return v !== null; });
+  if (!vals.length) return;
+  var absMax = Math.max.apply(null, vals.map(Math.abs)) || 0.0001;
+  var cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+  function yP(v) { return PAD.t + lerp(v, -absMax, absMax, ch, 0); }
+  function xP(i) { return PAD.l + (i + 0.5) / N * cw; }
+  ctx.strokeStyle = '#1a2535'; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(PAD.l, yP(0)); ctx.lineTo(W - PAD.r, yP(0)); ctx.stroke();
+  ctx.fillStyle = '#475569'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+  ctx.fillText(absMax.toExponential(1), PAD.l - 3, PAD.t + 8);
+  var bw = Math.max(1, cw / N * 0.6);
+  for (var i = 0; i < N; i++) {
+    if (hist[i] === null) continue;
+    var x = xP(i), y0 = yP(0), y1 = yP(hist[i]);
+    ctx.fillStyle = hist[i] >= 0 ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)';
+    ctx.fillRect(x - bw/2, Math.min(y0, y1), bw, Math.max(1, Math.abs(y0 - y1)));
+  }
+  // MACD line
+  ctx.beginPath(); var started = false;
+  for (var i = 0; i < N; i++) {
+    if (macd[i] === null) continue;
+    var x = xP(i), y = yP(macd[i]);
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5; ctx.stroke();
+  // Signal line
+  ctx.beginPath(); started = false;
+  for (var i = 0; i < N; i++) {
+    if (sig[i] === null) continue;
+    var x = xP(i), y = yP(sig[i]);
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function drawRSI() {
+  var ctx = getCtx('c-rsi', 65);
+  var W = ctx._w, H = ctx._h;
+  var PAD = { l: 52, r: 6, t: 4, b: 4 };
+  ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, W, H);
+  if (!PH.length) return;
+  var closes = PH.map(function(c) { return c.c; });
+  var rsiArr = calcRSI(closes, 7);
+  var N = Math.min(PH.length, 60), off = PH.length - N;
+  var sl = rsiArr.slice(off);
+  var cw = W - PAD.l - PAD.r, ch = H - PAD.t - PAD.b;
+  function yP(v) { return PAD.t + lerp(v, 0, 100, ch, 0); }
+  function xP(i) { return PAD.l + (i + 0.5) / N * cw; }
+  ctx.fillStyle = 'rgba(239,68,68,0.07)'; ctx.fillRect(PAD.l, yP(70), cw, yP(100) - yP(70));
+  ctx.fillStyle = 'rgba(34,197,94,0.07)';  ctx.fillRect(PAD.l, yP(0), cw, yP(30) - yP(0));
+  [30, 50, 70].forEach(function(v) {
+    ctx.beginPath(); ctx.moveTo(PAD.l, yP(v)); ctx.lineTo(W - PAD.r, yP(v));
+    ctx.strokeStyle = v === 50 ? '#1a2535' : 'rgba(71,85,105,0.4)'; ctx.lineWidth = 0.5; ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '8px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(v, PAD.l - 3, yP(v) + 3);
+  });
+  ctx.beginPath(); var started = false;
+  for (var i = 0; i < N; i++) {
+    if (sl[i] === null) continue;
+    var x = xP(i), y = yP(sl[i]);
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 1.5; ctx.stroke();
+  // current value
+  var last = null;
+  for (var i = sl.length - 1; i >= 0; i--) { if (sl[i] !== null) { last = sl[i]; break; } }
+  if (last !== null) {
+    ctx.fillStyle = last > 70 ? '#ef4444' : last < 30 ? '#22c55e' : '#a855f7';
+    ctx.font = 'bold 9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(last.toFixed(1), PAD.l - 3, yP(last) + 3);
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER INDICATORS
+// ═══════════════════════════════════════════
+function renderIndicators() {
+  if (!PH.length) return;
+  var closes = PH.map(function(c) { return c.c; });
+  var n = closes.length;
+  var rsiArr = calcRSI(closes, 7);
+  var md = calcMACD(closes);
+  var e9 = ema(closes, 9), e21 = ema(closes, 21), e50 = ema(closes, 50);
+  var bb = calcBB(closes, 20, 2);
+  var atrArr = calcATR(PH, 14);
+  var price = closes[n-1];
+  var rsi = rsiArr[n-1] || 50;
+  var macdH = md.hist[n-1] || 0;
+  var bbU = bb.upper[n-1], bbL = bb.lower[n-1];
+  var bbPct = bbU && bbL ? ((price - bbL) / (bbU - bbL) * 100) : 50;
+  var atr = atrArr[n-1] || 0;
+
+  function card(name, val, sub, dir, gauge) {
+    var cls = dir === 'bull' ? 'ind-bull' : dir === 'bear' ? 'ind-bear' : 'ind-neu';
+    var gc = dir === 'bull' ? '#22c55e' : dir === 'bear' ? '#ef4444' : '#f59e0b';
+    var sc = dir === 'bull' ? '#22c55e' : dir === 'bear' ? '#ef4444' : '#475569';
+    return '<div class="ind-card">'
+      + '<div class="ind-name">' + name + '</div>'
+      + '<div class="ind-val ' + cls + '">' + val + '</div>'
+      + '<div class="ind-sub" style="color:' + sc + '">' + sub + '</div>'
+      + (gauge !== undefined ? '<div class="gauge"><div class="gauge-fill" style="width:' + Math.max(0,Math.min(100,gauge)) + '%;background:' + gc + '"></div></div>' : '')
+      + '</div>';
+  }
+
+  var rsiDir = rsi < 35 ? 'bull' : rsi > 65 ? 'bear' : 'neu';
+  var macdDir = macdH > 0 ? 'bull' : 'bear';
+  var e9dir = e9[n-1] && price > e9[n-1] ? 'bull' : 'bear';
+  var e21dir = e21[n-1] && price > e21[n-1] ? 'bull' : 'bear';
+  var trendDir = e9dir === 'bull' && e21dir === 'bull' ? 'bull' : e9dir === 'bear' && e21dir === 'bear' ? 'bear' : 'neu';
+  var bbDir = bbPct > 70 ? 'bear' : bbPct < 30 ? 'bull' : 'neu';
+
+  document.getElementById('ind-trend').innerHTML =
+    card('EMA 9', e9[n-1] ? pf(e9[n-1]) : '─', price > (e9[n-1]||0) ? 'Powyżej' : 'Poniżej', e9dir)
+    + card('EMA 21', e21[n-1] ? pf(e21[n-1]) : '─', price > (e21[n-1]||0) ? 'Powyżej' : 'Poniżej', e21dir)
+    + card('EMA 50', e50[n-1] ? pf(e50[n-1]) : '─', price > (e50[n-1]||0) ? 'Powyżej' : 'Poniżej', price>(e50[n-1]||0)?'bull':'bear')
+    + card('Trend', trendDir==='bull'?'▲ BULL':trendDir==='bear'?'▼ BEAR':'◆ BOCZNY', 'EMA 9/21/50', trendDir);
+
+  document.getElementById('ind-osc').innerHTML =
+    card('RSI (7)', rsi.toFixed(1), rsi<35?'Oversold':rsi>65?'Overbought':'Neutral', rsiDir, rsi)
+    + card('MACD', macdH.toFixed(5), macdH>0?'Pozytywny':'Negatywny', macdDir)
+    + card('BB %B', bbPct.toFixed(0)+'%', bbPct>70?'Przy górnej':bbPct<30?'Przy dolnej':'W środku', bbDir, bbPct)
+    + card('BB Mid', bb.mid[n-1] ? pf(bb.mid[n-1]) : '─', price>(bb.mid[n-1]||0)?'Powyżej':'Poniżej', price>(bb.mid[n-1]||0)?'bull':'bear');
+
+  document.getElementById('ind-vol').innerHTML =
+    card('ATR (14)', pf(atr), 'Volatility', 'neu')
+    + card('H / L', pf(PH[n-1].h) + ' / ' + pf(PH[n-1].l), 'Zakres świecy', 'neu');
+}
+
+// ═══════════════════════════════════════════
+// RENDER PATTERNS
+// ═══════════════════════════════════════════
+function renderPatterns() {
+  var pats = detectPatterns(PH);
+  var el = document.getElementById('pat-list');
+  if (!pats.length) {
+    el.innerHTML = '<div class="no-data">Brak formacji na ostatnich świecach.<br><span style="font-size:11px">Formacje wykrywane są na 1–3 ostatnich świecach.</span></div>';
+    return;
+  }
+  el.innerHTML = pats.map(function(p) {
+    var bc = p.dir === 'bull' ? 'pbull' : p.dir === 'bear' ? 'pbear' : 'pneu';
+    var bt = p.dir === 'bull' ? 'BUY' : p.dir === 'bear' ? 'SELL' : 'NEU';
+    return '<div class="pat-card">'
+      + '<div class="pat-icon">' + p.icon + '</div>'
+      + '<div class="pat-body"><div class="pat-name">' + p.name + '</div><div class="pat-desc">' + p.desc + '</div></div>'
+      + '<span class="pat-badge ' + bc + '">' + bt + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+
+function calcStoch(candles, k) {
+  k = k || 5;
+  var out = [];
+  for (var i = 0; i < candles.length; i++) {
+    var sl = candles.slice(Math.max(0, i - k + 1), i + 1);
+    var hi = Math.max.apply(null, sl.map(function(c) { return c.h; }));
+    var lo = Math.min.apply(null, sl.map(function(c) { return c.l; }));
+    out.push(hi === lo ? 50 : ((candles[i].c - lo) / (hi - lo)) * 100);
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════
+// RENDER ANALIZA — dynamiczne opisy
+// ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// RENDER ANALIZA — narracyjna analiza konfluencji
+// Logika: Price Action → Trend → Momentum → Rekomendacja
+// ═══════════════════════════════════════════════════════
+function renderAnaliza() {
+  var el = document.getElementById('analiza-content');
+  if (!el) return;
+  if (!PH.length) {
+    el.innerHTML = '<div style="padding:20px;color:#94a3b8;font-size:13px;text-align:center">Brak danych. Odśwież lub poczekaj.</div>';
+    return;
+  }
+
+  // ── RAW DATA ──────────────────────────────
+  var cl = PH.map(function(c){return c.c;});
+  var n = cl.length;
+  var price  = PH[n-1].c;
+  var pOpen  = PH[n-1].o;
+  var pHigh  = PH[n-1].h;
+  var pLow   = PH[n-1].l;
+  var pPrev  = n > 1 ? PH[n-2].c : price;
+
+  // ── INDICATORS ───────────────────────────
+  var rsiArr  = calcRSI(cl, 7);
+  var rsi     = rsiArr[n-1] || 50;
+  var rsiPrev = rsiArr[n-2] || 50;
+
+  var macdD   = calcMACD(cl);
+  var mH      = macdD.hist[n-1] || 0;
+  var mHP     = macdD.hist[n-2] || 0;
+  var mHPP    = macdD.hist[n-3] || 0;
+
+  var e9arr   = ema(cl, 9);
+  var e21arr  = ema(cl, 21);
+  var e50arr  = ema(cl, 50);
+  var e9      = e9arr[n-1]  || price;
+  var e21     = e21arr[n-1] || price;
+  var e50     = e50arr[n-1] || price;
+
+  var bbD     = calcBB(cl, 20, 2);
+  var bbU     = bbD.upper[n-1] || price * 1.01;
+  var bbL     = bbD.lower[n-1] || price * 0.99;
+  var bbM     = bbD.mid[n-1]   || price;
+  var bbPct   = (bbU > bbL) ? ((price - bbL) / (bbU - bbL) * 100) : 50;
+  var bbWidth = bbM ? ((bbU - bbL) / bbM * 100) : 1;
+
+  var stkArr  = calcStoch(PH, 5);
+  var stk     = stkArr[n-1] || 50;
+
+  var atrArr  = calcATR(PH, 14);
+  var atr     = atrArr[n-1] || 0;
+  var atrPip  = CUR_TYPE === 'forex'
+    ? (atr * (SYM.indexOf('JPY') !== -1 ? 100 : 10000)).toFixed(1) + ' pip'
+    : pf(atr);
+
+  // ── PRICE ACTION ─────────────────────────
+  var pats     = detectPatterns(PH);
+  var candleBody = Math.abs(price - pOpen);
+  var candleRange = pHigh - pLow || 0.0001;
+  var bodyRatio   = candleBody / candleRange;
+  var isBull      = price >= pOpen;
+  var lowerWick   = Math.min(price, pOpen) - pLow;
+  var upperWick   = pHigh - Math.max(price, pOpen);
+  var momentum3   = n >= 3 ? (price - PH[n-3].o) / PH[n-3].o * 100 : 0;
+
+  // Typ ostatniej świecy
+  var candleType;
+  if (bodyRatio < 0.1) {
+    candleType = 'doji';
+  } else if (lowerWick > candleBody * 2 && upperWick < candleBody * 0.5) {
+    candleType = isBull ? 'hammer_bull' : 'hammer_bear';
+  } else if (upperWick > candleBody * 2 && lowerWick < candleBody * 0.5) {
+    candleType = isBull ? 'star_bull' : 'shooting_star';
+  } else if (bodyRatio > 0.7) {
+    candleType = isBull ? 'strong_bull' : 'strong_bear';
+  } else {
+    candleType = isBull ? 'mild_bull' : 'mild_bear';
+  }
+
+  // Dywergencja RSI
+  var rsiDivergence = 'none';
+  if (n >= 5) {
+    var priceHigher = price > PH[n-4].c;
+    var rsiHigher   = rsi > (rsiArr[n-4] || rsi);
+    if (priceHigher && !rsiHigher && rsi > 50) rsiDivergence = 'bearish'; // cena wyżej, RSI niżej = osłabienie
+    if (!priceHigher && rsiHigher && rsi < 50)  rsiDivergence = 'bullish'; // cena niżej, RSI wyżej = siła
+  }
+
+  // MACD momentum kierunek (3 świece)
+  var macdTrend = 'flat';
+  if (mH > mHP && mHP > mHPP) macdTrend = 'accelerating_bull';
+  else if (mH < mHP && mHP < mHPP) macdTrend = 'accelerating_bear';
+  else if (mH > 0 && mHP <= 0) macdTrend = 'cross_bull';
+  else if (mH < 0 && mHP >= 0) macdTrend = 'cross_bear';
+  else if (mH > 0) macdTrend = 'bull';
+  else if (mH < 0) macdTrend = 'bear';
+
+  // Układ EMA
+  var emaLayout = 'mixed';
+  if (e9 > e21 && e21 > e50 && price > e9)  emaLayout = 'full_bull';
+  else if (e9 > e21 && e21 > e50)            emaLayout = 'bull_pullback';
+  else if (e9 < e21 && e21 < e50 && price < e9) emaLayout = 'full_bear';
+  else if (e9 < e21 && e21 < e50)            emaLayout = 'bear_pullback';
+  else if (price > e9 && price > e21)        emaLayout = 'above_emas';
+  else if (price < e9 && price < e21)        emaLayout = 'below_emas';
+
+  // BB strefa
+  var bbZone = 'middle';
+  if (price > bbU)       bbZone = 'above_upper';
+  else if (bbPct > 75)   bbZone = 'near_upper';
+  else if (price < bbL)  bbZone = 'below_lower';
+  else if (bbPct < 25)   bbZone = 'near_lower';
+  else if (bbWidth < 0.8) bbZone = 'squeeze';
+
+  // ── SCORING ──────────────────────────────
+  // Liczę punkty bull/bear dla każdej kategorii osobno
+  // żeby opisać konfluencję lub konflikt
+  var paScore  = 0; // price action
+  var trScore  = 0; // trend
+  var moScore  = 0; // momentum
+  var voScore  = 0; // volatility/BB
+
+  // Price Action score
+  if (candleType === 'strong_bull') paScore += 2;
+  else if (candleType === 'mild_bull') paScore += 1;
+  else if (candleType === 'hammer_bull') paScore += 2;
+  else if (candleType === 'star_bull') paScore += 1;
+  else if (candleType === 'strong_bear') paScore -= 2;
+  else if (candleType === 'mild_bear') paScore -= 1;
+  else if (candleType === 'shooting_star') paScore -= 2;
+  else if (candleType === 'hammer_bear') paScore -= 1;
+  // formacje
+  pats.forEach(function(p) {
+    if (p.dir === 'bull') paScore += 1.5;
+    else if (p.dir === 'bear') paScore -= 1.5;
+  });
+  if (momentum3 > 0.5) paScore += 1;
+  else if (momentum3 < -0.5) paScore -= 1;
+
+  // Trend score
+  if (emaLayout === 'full_bull')      trScore = 3;
+  else if (emaLayout === 'bull_pullback') trScore = 1.5;
+  else if (emaLayout === 'above_emas')   trScore = 1;
+  else if (emaLayout === 'full_bear')    trScore = -3;
+  else if (emaLayout === 'bear_pullback') trScore = -1.5;
+  else if (emaLayout === 'below_emas')   trScore = -1;
+
+  // Momentum score
+  if (macdTrend === 'cross_bull')          moScore += 2.5;
+  else if (macdTrend === 'accelerating_bull') moScore += 2;
+  else if (macdTrend === 'bull')           moScore += 1;
+  else if (macdTrend === 'cross_bear')     moScore -= 2.5;
+  else if (macdTrend === 'accelerating_bear') moScore -= 2;
+  else if (macdTrend === 'bear')           moScore -= 1;
+  if (rsi < 30)      moScore += 1.5;
+  else if (rsi < 40) moScore += 0.5;
+  else if (rsi > 70) moScore -= 1.5;
+  else if (rsi > 60) moScore -= 0.5;
+  else if (rsi > 50) moScore += 0.3;
+  else               moScore -= 0.3;
+  if (rsiDivergence === 'bullish') moScore += 1.5;
+  else if (rsiDivergence === 'bearish') moScore -= 1.5;
+  if (stk < 20) moScore += 1;
+  else if (stk > 80) moScore -= 1;
+
+  // BB/Volatility score
+  if (bbZone === 'near_lower' || bbZone === 'below_lower') voScore += 1;
+  else if (bbZone === 'near_upper' || bbZone === 'above_upper') voScore -= 1;
+
+  var totalScore = paScore + trScore + moScore + voScore;
+  var maxScore = 11;
+  var normScore = Math.max(-maxScore, Math.min(maxScore, totalScore));
+  var pct = Math.round(50 + normScore / maxScore * 50);
+
+  // Finalny sygnał
+  var signal, signalColor, signalBg;
+  if (totalScore >= 4)       { signal = 'BUY';  signalColor = '#22c55e'; signalBg = 'rgba(34,197,94,.15)'; }
+  else if (totalScore <= -4) { signal = 'SELL'; signalColor = '#ef4444'; signalBg = 'rgba(239,68,68,.15)'; }
+  else if (totalScore >= 1.5){ signal = 'WATCH LONG';  signalColor = '#86efac'; signalBg = 'rgba(34,197,94,.08)'; }
+  else if (totalScore <= -1.5){ signal = 'WATCH SHORT'; signalColor = '#fca5a5'; signalBg = 'rgba(239,68,68,.08)'; }
+  else                        { signal = 'WAIT';  signalColor = '#94a3b8'; signalBg = 'rgba(148,163,184,.1)'; }
+
+  // Czy sygnały są zgodne czy sprzeczne
+  var scores = [paScore, trScore, moScore];
+  var bullCount = scores.filter(function(s){return s > 0;}).length;
+  var bearCount = scores.filter(function(s){return s < 0;}).length;
+  var isConflict = (bullCount > 0 && bearCount > 0);
+  var isConfluence = (bullCount === 3 || bearCount === 3);
+
+  // ── NARRACJE ─────────────────────────────
+
+  // PRICE ACTION narracja
+  var paNarr = '';
+  var patNames = pats.map(function(p){return p.name;}).join(', ');
+
+  if (candleType === 'doji') {
+    paNarr = 'Ostatnia świeca to <b>Doji</b> — cena otworzyła i zamknęła się niemal w tym samym miejscu. ';
+    paNarr += 'Rynek jest niezdecydowany, kupujący i sprzedający są w równowadze. ';
+    if (bbZone === 'near_upper' || bbZone === 'above_upper') {
+      paNarr += 'Doji przy górnej wstędze Bollingera to klasyczny sygnał ostrzegawczy — impet wzrostowy może się wyczerpywać.';
+    } else if (bbZone === 'near_lower' || bbZone === 'below_lower') {
+      paNarr += 'Doji przy dolnej wstędze to potencjalny sygnał zatrzymania spadków — ale wymaga potwierdzenia kolejną świecą.';
+    } else {
+      paNarr += 'W środku pasm BB Doji jest słabszym sygnałem — sam w sobie nie uzasadnia wejścia.';
+    }
+  } else if (candleType === 'strong_bull') {
+    paNarr = 'Ostatnia świeca to <b>silna bycza świeca</b> z dużym ciałem (' + (bodyRatio * 100).toFixed(0) + '% zakresu). ';
+    paNarr += 'Kupujący zdominowali całą świecę — cena otworzyła się nisko i zamknęła wysoko. ';
+    if (momentum3 > 1) paNarr += 'Ruch jest kontynuacją trendu ostatnich ' + 3 + ' świec (+' + momentum3.toFixed(2) + '%).';
+    else paNarr += 'To może być świeca breakoutowa lub odreagowanie — kontekst wskaźników jest kluczowy.';
+  } else if (candleType === 'strong_bear') {
+    paNarr = 'Ostatnia świeca to <b>silna niedźwiedzia świeca</b> z dużym ciałem. ';
+    paNarr += 'Sprzedający zdominowali całą świecę — cena otworzyła się wysoko i zamknęła nisko. ';
+    if (momentum3 < -1) paNarr += 'Ruch kontynuuje presję z ostatnich ' + 3 + ' świec (' + momentum3.toFixed(2) + '%).';
+    else paNarr += 'Silna pojedyncza świeca spadkowa — sprawdź czy to breakdown czy tylko korekta.';
+  } else if (candleType === 'hammer_bull' || candleType === 'hammer_bear') {
+    paNarr = 'Ostatnia świeca tworzy wzorzec <b>Hammera</b> — długi dolny cień odrzucony przez rynek. ';
+    paNarr += 'Kupujący obronili niskie ceny i wciągnęli kurs z powrotem w górę. ';
+    paNarr += bbZone === 'near_lower' || bbZone === 'below_lower'
+      ? 'Hammer przy dolnej wstędze BB to jeden z silniejszych sygnałów odwrócenia — price action potwierdza wsparcie.'
+      : 'Hammer w środku pasm BB jest słabszy — potrzebuje potwierdzenia wskaźnikami.';
+  } else if (candleType === 'shooting_star') {
+    paNarr = 'Ostatnia świeca to <b>Shooting Star</b> — długi górny cień odrzucony przez rynek. ';
+    paNarr += 'Kupujący próbowali wypchnąć cenę w górę, ale sprzedający ją zepchnęli z powrotem. ';
+    paNarr += bbZone === 'near_upper' || bbZone === 'above_upper'
+      ? 'Przy górnej wstędze BB to klasyczny sygnał wyczerpania trendu wzrostowego.'
+      : 'Poza górną wstęgą BB sygnał jest słabszy — wymaga potwierdzenia.';
+  } else {
+    paNarr = 'Ostatnia świeca to ' + (isBull ? '<b>bycza</b>' : '<b>niedźwiedzia</b>') + ' świeca o umiarkowanej sile (ciało: ' + (bodyRatio * 100).toFixed(0) + '% zakresu). ';
+    paNarr += isBull
+      ? 'Kupujący mają nieznaczną przewagę na tej świecy, ale ruch nie jest szczególnie zdecydowany.'
+      : 'Sprzedający mają nieznaczną przewagę, ale bez silnego impulsu.';
+  }
+
+  if (pats.length > 0) {
+    paNarr += ' <b>Wykryte formacje: ' + patNames + '.</b>';
+    var bullPats = pats.filter(function(p){return p.dir==='bull';});
+    var bearPats = pats.filter(function(p){return p.dir==='bear';});
+    if (bullPats.length > 0 && bearCount > 0) {
+      paNarr += ' Uwaga: formacja bycza pojawia się w otoczeniu niedźwiedzich wskaźników — to sprzeczny sygnał, traktuj ostrożnie.';
+    } else if (bearPats.length > 0 && bullCount > 0) {
+      paNarr += ' Uwaga: formacja niedźwiedzia w byczym otoczeniu wskaźników — sprzeczność wymaga potwierdzenia.';
+    }
+  } else {
+    paNarr += ' Brak wyraźnych formacji świecowych na ostatnich 3 świecach.';
+  }
+
+  // TREND narracja
+  var trNarr = '';
+  if (emaLayout === 'full_bull') {
+    trNarr = 'Układ EMA jest <b>klasycznie byczym trendem</b>: cena powyżej EMA9 (' + pf(e9) + '), EMA9 powyżej EMA21 (' + pf(e21) + '), EMA21 powyżej EMA50 (' + pf(e50) + '). ';
+    trNarr += 'To układ w którym wszystkie średnie ustawione są rosnąco — instytucje i detaliczni handlują w tym samym kierunku. ';
+    trNarr += 'Cofnięcia do EMA9 lub EMA21 to <b>okazje do wejścia long</b>, nie powód do paniki.';
+  } else if (emaLayout === 'bull_pullback') {
+    trNarr = 'EMA9 > EMA21 > EMA50 — struktura trendu wzrostowego jest <b>nienaruszona</b>, ale cena jest poniżej EMA9 (' + pf(e9) + '). ';
+    trNarr += 'To typowa korekta w trendzie wzrostowym. ';
+    trNarr += price > e21
+      ? 'Cena utrzymuje się powyżej EMA21 — korekta jest płytka, trend wzrostowy wciąż dominuje.'
+      : 'Cena jest poniżej EMA21 — korekta jest głębsza, poczekaj na powrót powyżej EMA21 przed długą pozycją.';
+  } else if (emaLayout === 'full_bear') {
+    trNarr = 'Układ EMA to <b>klasyczny trend spadkowy</b>: cena poniżej EMA9 (' + pf(e9) + '), EMA9 poniżej EMA21 (' + pf(e21) + '), EMA21 poniżej EMA50 (' + pf(e50) + '). ';
+    trNarr += 'Wszystkie średnie ustawione malejąco — sprzedający kontrolują każdy timeframe. ';
+    trNarr += 'Odbicia do EMA9 lub EMA21 to <b>okazje do wejścia short</b>, nie sygnał odwrócenia.';
+  } else if (emaLayout === 'bear_pullback') {
+    trNarr = 'EMA9 < EMA21 < EMA50 — struktura trendu spadkowego jest zachowana, ale cena odbiła powyżej EMA9 (' + pf(e9) + '). ';
+    trNarr += 'To typowe odbicie w trendzie spadkowym. ';
+    trNarr += price < e21
+      ? 'Cena nadal poniżej EMA21 — odbicie jest słabe, trend niedźwiedzi dominuje.'
+      : 'Cena przebiła EMA21 — to sygnał ostrzegawczy dla shortów, możliwa zmiana trendu.';
+  } else if (emaLayout === 'above_emas') {
+    trNarr = 'Cena jest powyżej EMA9 i EMA21, ale układ EMA jest <b>mieszany</b> — nie ma jeszcze pełnej struktury trendu wzrostowego. ';
+    trNarr += 'EMA9 (' + pf(e9) + ') vs EMA21 (' + pf(e21) + ') vs EMA50 (' + pf(e50) + '). ';
+    trNarr += 'Rynek może budować nowy trend wzrostowy — poczekaj na ukształtowanie się układu EMA9 > EMA21 > EMA50.';
+  } else if (emaLayout === 'below_emas') {
+    trNarr = 'Cena jest poniżej EMA9 i EMA21 — <b>krótkoterminowy trend jest niedźwiedzi</b>. ';
+    trNarr += 'Układ EMA jest mieszany (' + pf(e9) + ' / ' + pf(e21) + ' / ' + pf(e50) + '). ';
+    trNarr += 'Dopóki cena jest poniżej EMA21, przewaga jest po stronie sprzedających.';
+  } else {
+    trNarr = 'Układ EMA jest <b>niejednoznaczny</b> (' + pf(e9) + ' / ' + pf(e21) + ' / ' + pf(e50) + '). ';
+    trNarr += 'Brak wyraźnego trendu — rynek jest prawdopodobnie w konsolidacji lub przejściu między trendami. ';
+    trNarr += 'Handel w takim otoczeniu jest bardziej ryzykowny.';
+  }
+
+  // Kontekst BB dla trendu
+  if (bbZone === 'squeeze') {
+    trNarr += ' <b>Pasma Bollingera są bardzo wąskie (' + bbWidth.toFixed(1) + '% szerokości)</b> — rynek konsoliduje. Historycznie po takim ściśnięciu następuje gwałtowny ruch w jedną stronę. Kierunek wyznaczą wskaźniki i pierwsza świeca breakoutowa.';
+  } else if (bbZone === 'above_upper') {
+    trNarr += ' Cena przebiła górną wstęgę BB — to sygnał siły lub wykupienia w zależności od kontekstu trendu.';
+  } else if (bbZone === 'below_lower') {
+    trNarr += ' Cena przebiła dolną wstęgę BB — silna presja podażowa lub strefa odwrócenia.';
+  }
+
+  // MOMENTUM narracja
+  var moNarr = '';
+
+  // RSI
+  if (rsi < 25) {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — rynek jest <b>ekstremalnie wyprzedany</b>. ';
+    moNarr += 'Sprzedający byli bardzo agresywni przez ostatnie świece. W day tradingu na 1H-4H RSI < 25 to strefa gdzie statystycznie prawdopodobne jest odbicie. ';
+  } else if (rsi < 35) {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — strefa <b>wyprzedania</b>. ';
+    moNarr += 'Siła sprzedającego słabnie. ';
+  } else if (rsi > 75) {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — rynek jest <b>ekstremalnie wykupiony</b>. ';
+    moNarr += 'Kupujący byli bardzo agresywni — może dochodzić do wyczerpania impulsu. ';
+  } else if (rsi > 65) {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — strefa <b>wykupienia</b>. ';
+    moNarr += 'Momentum wzrostowe jest silne, ale potencjał kontynuacji maleje. ';
+  } else if (rsi > 50) {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — <b>bycze momentum</b> (powyżej 50). ';
+    moNarr += 'Kupujący mają lekką przewagę — trend wzrostowy jest potwierdzony od strony momentum. ';
+  } else {
+    moNarr = 'RSI wynosi <b>' + rsi.toFixed(1) + '</b> — <b>niedźwiedzie momentum</b> (poniżej 50). ';
+    moNarr += 'Sprzedający mają lekką przewagę od strony momentum. ';
+  }
+
+  // RSI kierunek
+  if (rsi > rsiPrev + 3) moNarr += 'RSI rośnie — momentum przyspiesza. ';
+  else if (rsi < rsiPrev - 3) moNarr += 'RSI spada — momentum osłabia. ';
+
+  // Dywergencja RSI
+  if (rsiDivergence === 'bearish') {
+    moNarr += '<b>Uwaga: bycza dywergencja RSI</b> — cena idzie wyżej ale RSI nie potwierdza. To jeden z najważniejszych sygnałów ostrzegawczych: siła ruchu słabnie pomimo rosnącej ceny. ';
+  } else if (rsiDivergence === 'bullish') {
+    moNarr += '<b>Uwaga: niedźwiedzia dywergencja RSI</b> — cena idzie niżej ale RSI nie potwierdza. Sprzedający tracą impet — potencjalne odwrócenie. ';
+  }
+
+  // MACD
+  if (macdTrend === 'cross_bull') {
+    moNarr += '<b>MACD właśnie przeciął linię sygnału od dołu</b> — to świeże potwierdzenie zmiany momentum na wzrostowe. Jeden z najsilniejszych sygnałów MACD.';
+  } else if (macdTrend === 'cross_bear') {
+    moNarr += '<b>MACD właśnie przeciął linię sygnału od góry</b> — świeże potwierdzenie zmiany momentum na spadkowe.';
+  } else if (macdTrend === 'accelerating_bull') {
+    moNarr += 'Histogram MACD rośnie trzecią świecę z rzędu — <b>momentum wzrostowe przyspiesza</b>.';
+  } else if (macdTrend === 'accelerating_bear') {
+    moNarr += 'Histogram MACD spada trzecią świecę z rzędu — <b>momentum spadkowe przyspiesza</b>.';
+  } else if (macdTrend === 'bull') {
+    moNarr += 'Histogram MACD jest dodatni — kupujący mają przewagę od strony momentum.';
+  } else {
+    moNarr += 'Histogram MACD jest ujemny — sprzedający mają przewagę od strony momentum.';
+  }
+
+  // REKOMENDACJA ─────────────────────────────
+  var recNarr = '';
+  var slHint  = '';
+  var atrSL   = CUR_TYPE === 'forex'
+    ? ((atr * (SYM.indexOf('JPY') !== -1 ? 100 : 10000) * 1.5).toFixed(0) + ' pip')
+    : pf(atr * 1.5);
+
+  if (signal === 'BUY') {
+    if (isConfluence) {
+      recNarr = '<b>Mocny sygnał BUY</b> — price action, trend i momentum wskazują jednocześnie na wzrosty. ';
+      recNarr += 'To wysoka konfluencja (wszystkie 3 obszary zgodne) — setup jest jakościowy. ';
+    } else {
+      recNarr = '<b>Sygnał BUY</b> — większość wskaźników sprzyja pozycji długiej. ';
+    }
+    recNarr += 'Wejście: przy aktualnej cenie lub na cofnięciu do EMA9 (' + pf(e9) + '). ';
+    recNarr += 'Stop Loss: poniżej ostatniego dołka lub 1.5x ATR = ' + atrSL + ' od wejścia. ';
+    recNarr += 'TP: EMA21 jako cel minimalny, EMA50 jako ambitny.';
+  } else if (signal === 'SELL') {
+    if (isConfluence) {
+      recNarr = '<b>Mocny sygnał SELL</b> — price action, trend i momentum wskazują jednocześnie na spadki. ';
+      recNarr += 'Wysoka konfluencja — setup jest jakościowy dla pozycji krótkiej. ';
+    } else {
+      recNarr = '<b>Sygnał SELL</b> — większość wskaźników sprzyja pozycji krótkiej. ';
+    }
+    recNarr += 'Wejście: przy aktualnej cenie lub na odbiciu do EMA9 (' + pf(e9) + '). ';
+    recNarr += 'Stop Loss: powyżej ostatniego szczytu lub 1.5x ATR = ' + atrSL + '. ';
+    recNarr += 'TP: EMA21 jako cel minimalny, EMA50 jako ambitny.';
+  } else if (signal === 'WATCH LONG') {
+    recNarr = '<b>Obserwuj pod LONG</b> — sytuacja jest lekko bycza ale bez mocnego potwierdzenia. ';
+    if (isConflict) {
+      recNarr += 'Wskaźniki są <b>sprzeczne</b> — część mówi w górę, część w dół. ';
+      recNarr += 'Nie wchodź bez wyraźniejszego potwierdzenia. Czekaj aż przynajmniej 3 z 4 obszarów (PA, trend, momentum, BB) mówią to samo. ';
+    } else {
+      recNarr += 'Czekaj na dodatkowe potwierdzenie: silną byczą świecę, przebicie EMA9 lub świeże MACD cross. ';
+    }
+    recNarr += 'ATR (zmienność): ' + atrPip + ' — ustaw SL minimum 1.5x ATR = ' + atrSL + '.';
+  } else if (signal === 'WATCH SHORT') {
+    recNarr = '<b>Obserwuj pod SHORT</b> — sytuacja jest lekko niedźwiedzia ale bez mocnego potwierdzenia. ';
+    if (isConflict) {
+      recNarr += 'Wskaźniki są <b>sprzeczne</b> — typowe dla rynku w przejściu lub konsolidacji. ';
+      recNarr += 'Nie wchodź short bez potwierdzenia: niedźwiedzia formacja + MACD poniżej sygnału + cena poniżej EMA21. ';
+    } else {
+      recNarr += 'Czekaj na potwierdzenie: niedźwiedzia świeca, zejście poniżej EMA9 lub MACD cross w dół. ';
+    }
+    recNarr += 'ATR: ' + atrPip + ' — SL 1.5x ATR = ' + atrSL + '.';
+  } else {
+    recNarr = '<b>CZEKAJ — brak czytelnego setupu.</b> ';
+    if (bbZone === 'squeeze') {
+      recNarr += 'Pasma Bollingera są ściśnięte — rynek szykuje się do ruchu, ale kierunek nieznany. ';
+      recNarr += 'Ustaw alert na przebicie ' + pf(bbU) + ' (góra) lub ' + pf(bbL) + ' (dół) i reaguj na pierwszą potwierdzającą świecę. ';
+    } else {
+      recNarr += 'Wskaźniki wzajemnie się wykluczają lub sygnały są zbyt słabe. ';
+      recNarr += 'W day tradingu (1H-4H) warto poczekać na wyraźny setup zamiast wchodzić w szum rynkowy. ';
+      recNarr += 'Sprawdź ten sam instrument na wyższym TF (4H lub D) żeby zobaczyć szerszy kontekst.';
+    }
+  }
+
+  // ── RENDER ──────────────────────────────
+  function sec(icon, title, color, content) {
+    return '<div style="background:#111820;border:1px solid #1a2535;border-left:3px solid '
+      + color + ';border-radius:10px;padding:12px 14px;margin-bottom:10px;">'
+      + '<div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;'
+      + 'letter-spacing:.8px;margin-bottom:7px">' + icon + ' ' + title + '</div>'
+      + '<div style="font-size:12px;color:#cbd5e1;line-height:1.7">' + content + '</div>'
+      + '</div>';
+  }
+
+  // Nagłówek z sygnałem
+  var header = '<div style="background:' + signalBg + ';border:1px solid ' + signalColor
+    + ';border-radius:10px;padding:14px;margin-bottom:10px;text-align:center;">'
+    + '<div style="font-size:22px;font-weight:900;color:' + signalColor + ';letter-spacing:2px">'
+    + signal + '</div>'
+    + '<div style="font-size:11px;color:#94a3b8;margin-top:4px">'
+    + SYM + ' · ' + tfLabel(TF) + ' · Siła: ' + pct + '%</div>'
+    + '<div style="height:4px;background:#1a2535;border-radius:2px;margin-top:8px;overflow:hidden">'
+    + '<div style="height:100%;width:' + pct + '%;background:' + signalColor + ';border-radius:2px;transition:width .4s"></div>'
+    + '</div>'
+    + (isConflict ? '<div style="font-size:10px;color:#f59e0b;margin-top:6px">⚠ Sprzeczne sygnały — zachowaj ostrożność</div>' : '')
+    + (isConfluence ? '<div style="font-size:10px;color:' + signalColor + ';margin-top:6px">✓ Wysoka konfluencja — mocny setup</div>' : '')
+    + '</div>';
+
+  var paColor = paScore > 0 ? '#22c55e' : paScore < 0 ? '#ef4444' : '#94a3b8';
+  var trColor = trScore > 0 ? '#22c55e' : trScore < 0 ? '#ef4444' : '#94a3b8';
+  var moColor = moScore > 0 ? '#22c55e' : moScore < 0 ? '#ef4444' : '#94a3b8';
+  var recColor = signal === 'BUY' || signal === 'WATCH LONG' ? '#22c55e'
+    : signal === 'SELL' || signal === 'WATCH SHORT' ? '#ef4444' : '#94a3b8';
+
+  el.innerHTML = header
+    + sec('🕯', 'Price Action', paColor, paNarr)
+    + sec('📈', 'Trend (EMA + BB)', trColor, trNarr)
+    + sec('⚡', 'Momentum (RSI + MACD + Stoch)', moColor, moNarr)
+    + sec('🎯', 'Rekomendacja', recColor, recNarr);
+}
+
+ENDJS
+
+// ═══════════════════════════════════════════
+var resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function() {
+    if (PH.length && currentTab === 0) { drawMain(); drawMACD(); drawRSI(); }
+  }, 150);
+});
+</script>
+</body>
+</html>
